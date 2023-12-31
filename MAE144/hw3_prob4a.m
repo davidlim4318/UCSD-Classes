@@ -1,14 +1,20 @@
-%%
 clear
 a_0 = 0.1;
 b_0 = 0.1;
 d = 6;
 
+%%
+[num,den] = pade(d,2);
+G_tf = tf(num,den)*tf(0.1,[1 0.1]);
+figure(2)
+rlocus(G_tf)
+
+%%
 syms s
 G(s) = b_0*exp(-d*s)/(s + a_0);
 
-K_u = 3.2;
-omega_u = 0.3;
+K_u = 3.32;
+omega_u = 0.317;
 T_u = 1/omega_u;
 
 alpha = 0.6;
@@ -32,7 +38,7 @@ for i = 1:length(jump)
 end
 
 %%
-figure(2)
+figure(3)
 subplot(2,1,1)
 loglog(omega,M,linewidth=3)
 title('Magnitude of G(s)*D(s)')
@@ -40,7 +46,7 @@ ylabel('Magnitude')
 xlabel('Omega (rad/s)')
 grid on
 subplot(2,1,2)
-semilogx(omega,180*phi/(2*pi),linewidth=3)
+semilogx(omega,180*phi/pi,linewidth=3)
 %axis([10^-2 10^1 -250 0])
 title('Phase of G(s)*D(s)')
 ylabel('Phase (deg)')

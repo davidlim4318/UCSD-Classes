@@ -7,7 +7,7 @@ r = 40;
 I = 2/3*m*r^2;
 g = 9.8*10^3;
 c = 0; % need to measure
-h = 0.12; %0.03; % need to measure
+h = 0.1; %0.03; % need to measure
 d = 0; %4*h; % need to measure
 a_1 = c/(m + I/r^2);
 b_0 = (g*m)/(m + I/r^2);
@@ -32,7 +32,7 @@ subplot(2,5,1); rlocus(G_P); axis(rlocaxis); axis equal; shg
 subplot(2,5,6); bode(G_P); shg
 
 %% Lead Controller 1
-omega_target = 1.2;
+omega_target = 1.8;
 alpha = 50;
 p = omega_target*sqrt(alpha);
 z = omega_target/sqrt(alpha);

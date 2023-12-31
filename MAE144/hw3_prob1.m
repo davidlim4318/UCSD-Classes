@@ -25,7 +25,7 @@ ylabel('Magnitude')
 xlabel('Omega (rad/s)')
 grid on
 subplot(2,1,2)
-semilogx(omega,180*phi/(2*pi),linewidth=3)
+semilogx(omega,180*phi/pi,linewidth=3)
 title('Phase of G(s)')
 ylabel('Phase (deg)')
 xlabel('Omega (rad/s)')

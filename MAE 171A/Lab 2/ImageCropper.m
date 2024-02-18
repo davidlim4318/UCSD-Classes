@@ -2,32 +2,33 @@
 % put this in a folder with your photograps (and only your photographs)
 % create a subfolder called 'cropped'
 
-clc;
-clear all;
-close all;
+clc
+clear
+close all
 
-%% test on one file
-myfile='DSC_0008.jpg';
+myfile='DSC_6766.jpg';
 
-myimg=imread(myfile);
+angle = 271;
+myimg=imrotate(imread(myfile),angle);
 imshow(myimg);
-
-cropimg=imcrop(myimg,[2400 1300 700 1200]);
+%%
+window = [1700 2300-800 2300-1700 4000-2300+900];
+cropimg=imcrop(myimg,window);
 imshow(cropimg);
 
 %% apply to all files in folder
 
-myfiles=dir('*.jpg');
-myfolder=pwd;
+images=dir('*.jpg');
 
-for i=1:length(myfiles)
+for i=1:length(images)
 
-    myimg=imread(myfiles(i).name);
-    imshow(myimg);
+    myimg=imrotate(imread(images(i).name),angle);
 
-    cropimg=imcrop(myimg,[2400 1300 700 1200]);
+    cropimg=imcrop(myimg,window);
     %imshow(cropimg);
 
-    imwrite(cropimg,[pwd '/cropped/crop_' myfiles(i).name]);
+    fullFileName = fullfile(images(i).folder, ['cropped_' images(i).name]);
+
+    imwrite(cropimg,fullFileName);
 
 end

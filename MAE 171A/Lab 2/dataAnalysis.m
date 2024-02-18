@@ -1,7 +1,7 @@
 %% 
-clc;
-clear;
-close all;
+clc
+clear
+close all
 
 M1 = readmatrix("A04_4_sample1_1.csv");
 M2 = readmatrix("A04_4_sample2.datatable.csv");

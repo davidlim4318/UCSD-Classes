@@ -10,10 +10,10 @@ close all
 
 %% Identify gage section in data
 
-yMinPx = 161;
-yMaxPx = 2095;
+yMinPx = 327;
+yMaxPx = 2217;
 
-mmPerPx = 2 * 25.4 / (yMaxPx - yMinPx); % mm distance divided by pixel distance
+mmPerPx = 2 * 25.4 / (2095 - 161); % mm distance divided by pixel distance
 
 mydata = readmatrix('DICe_solution_15.txt'); % Reads first file
 
@@ -43,7 +43,7 @@ axis equal
 
 %% Calculate average strains of each frame
 
-frames = 16; % number of frames
+frames = 11; % number of frames
 strainAvg = zeros(frames,1); % placehoder for data
 
 for i = 1:frames

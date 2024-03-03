@@ -10,8 +10,8 @@ close all
 
 %% Identify gage section in data
 
-yMinPx = 216;
-yMaxPx = 2189;
+yMinPx = 245;
+yMaxPx = 2116;
 
 mmPerPx = 2 * 25.4 / (2095 - 161); % mm distance divided by pixel distance
 
@@ -43,7 +43,7 @@ axis equal
 
 %% Calculate average strains of each frame
 
-frames = 11; % number of frames
+frames = 15; % number of frames
 strainAvg = zeros(frames,1); % placehoder for data
 
 for i = 1:frames

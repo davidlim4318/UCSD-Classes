@@ -15,7 +15,7 @@ yMaxPx = 2220;
 
 mmPerPx = 2 * 25.4 / (yMaxPx - yMinPx); % mm distance divided by pixel distance
 
-mydata = readmatrix('DICe_solution_15.txt'); % Reads first file
+mydata = readmatrix('DICe_solution_00.txt'); % Reads first file
 
 yPos = mydata(:,3); % only get y-coordinates first
 
@@ -60,4 +60,4 @@ plot(strainAvg) % plot average strain of each frame
 
 %% Save average strain data
 
-save("AverageStrainSample1","strainAvg");
+save("AverageStrain","strainAvg");

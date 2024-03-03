@@ -43,7 +43,7 @@ axis equal
 
 %% Calculate average strains of each frame
 
-frames = 11; % number of frames
+frames = 16; % number of frames
 strainAvg = zeros(frames,1); % placehoder for data
 
 for i = 1:frames
@@ -60,4 +60,4 @@ plot(strainAvg) % plot average strain of each frame
 
 %% Save average strain data
 
-save("AverageStrainSample1","strainAvg");
+save("AverageStrain","strainAvg");

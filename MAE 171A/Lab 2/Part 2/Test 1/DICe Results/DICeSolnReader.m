@@ -10,8 +10,8 @@ close all
 
 %% Identify gage section in data
 
-yMinPx = 161;
-yMaxPx = 2095;
+yMinPx = 246;
+yMaxPx = 2220;
 
 mmPerPx = 2 * 25.4 / (yMaxPx - yMinPx); % mm distance divided by pixel distance
 

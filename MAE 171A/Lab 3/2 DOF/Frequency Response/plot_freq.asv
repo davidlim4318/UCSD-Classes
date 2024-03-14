@@ -98,8 +98,7 @@ d1 = 1.630e-5;
 m2 = 6.076e-6;
 d2 = 1.657e-6;
 
-G = tf(k2, [m1*m2 (d1*m2 + d2*m1) (d1*d2 + k2*m1 + k2*m2) (d1*k2 + d2*k2) 0]);
-
+%G = tf(k2, [m1*m2 (d1*m2 + d2*m1) (d1*d2 + k2*m1 + k2*m2) (d1*k2 + d2*k2) 0]);
 G = 200*tf( conv([1 15],[1 2*0.05*3 3^2]) , conv([1 0 0],[1 2*0.03*4 4^2]) );
 
 [mag, ~] = bode(G,f_1);
@@ -122,7 +121,7 @@ options = statset('MaxIter',10000);
 %modelfun = @(b,omega) ( abs( b(6) .* (1j.*omega + b(5)) .* ((1j.*omega).^2 + 2.*b(4).*1j.*omega + b(3).^2) ./ ( (1j.*omega).^2 .* ((1j.*omega).^2 + 2.*b(2).*1j.*omega + b(1).^2 ) ) ) );
 %beta = nlinfit(f_2(1:1000),Txy_2(1:1000),modelfun,[4 0.03*4 3 0.05*3 15 200], options);
 
-modelfun = @(b,omega) ( abs ( (b(1).*(1j.*omega).^3 - b(2).*omega.^2 + b(3).*1j.*omega + b(4)) ./ (omega.^4 + b(5).*(1j.*omega).^3 - b(6).*omega.^2) ) );
+modelfun = @(b,omega) ( abs ( (b(1).*(1j.*omega).^3 - b(2).*omega.^2 + b(3).*1j.*omega + b(4)) / (omega.^2 + b(5).*(1j.*omega).^3 - b(6).*omega.^2) ) );
 beta = nlinfit(f_2(1:1000),Txy_2(1:1000),modelfun,[200 3060 2700 27000 0.24 16], options);
 
 G = beta(6)*tf( conv([1 beta(5)],[1 2*beta(4) beta(3)^2]) , conv([1 0 0],[1 2*beta(2) beta(1)^2]) );

@@ -1,0 +1,63 @@
+clear
+
+ks = zeros(5,1);
+ms = zeros(5,1);
+ds = zeros(5,1);
+
+n = 4;
+w = 100;
+
+for i = 1:5
+    M = readmatrix("encoder1_bottom_trial_" + int2str(i),'Whitespace',[';','[',']']);
+    time = M(:,3);
+    x1 = M(:,5);
+    x2 = M(:,6);
+    F = M(:,7);
+
+    [y_pks,t_pks] = findpeaks(x1,time,'NPeaks',n);
+
+    idx = find(F < 0.5,1,'first');
+    y_ss = mean(x1(idx-w:idx-1));
+
+    omega_d = 2*pi*n/(t_pks(n)-t_pks(1));
+    beta_omega_n = log((y_pks(1)-y_ss)/(y_pks(4)-y_ss))/(t_pks(n)-t_pks(1));
+    omega_n = sqrt(omega_d^2+(beta_omega_n)^2);
+    beta = beta_omega_n/omega_n;
+
+    ks(i) = 0.5/y_ss;
+    ms(i) = ks(i)/omega_n^2;
+    ds(i) = ks(i)*2*beta/omega_n;
+    
+    figure(1)
+    clf
+    hold on
+    
+    yyaxis left
+    plot(time,x1,'b.','MarkerSize',10)
+    plot(t_pks,y_pks+10,'bv','MarkerSize',10)
+    plot(time,x2,'r.','MarkerSize',10)
+    ylabel("Displacement (counts)")
+    ax = gca;
+    ax.YColor = 'k';
+    
+    yyaxis right
+    plot(time,F,'m.','MarkerSize',10)
+    ylabel("Force (V)")
+    ax = gca;
+    ax.YColor = 'm';
+    
+    hold off
+    title("(a)")
+    xlabel("Time (s)")
+    legend('Disc 1','Peaks','Disc 2','Control Effort','Location','best')
+    
+    ax = gca;
+    ax.TitleHorizontalAlignment = 'left';
+    set(ax,'FontSize',12)
+
+    pause(1)
+end
+
+k = mean(ks);
+m = mean(ms);
+d = mean(ds);

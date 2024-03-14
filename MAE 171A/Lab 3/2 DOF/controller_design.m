@@ -10,17 +10,19 @@ d2 = 1.657e-6;
 
 %G = tf(k2, [m1*m2 (d1*m2 + d2*m1) (d1*d2 + k2*m1 + k2*m2) (d1*k2 + d2*k2) 0]);
 
-G = 200*tf( conv([1 15],[1 2*0.05*3 3^2]) , conv([1 0 0],[1 2*0.03*4 4^2]) );
+G = 7*tf( conv([1 500], [1 2*0.02*3 3^2]) , conv([1 0 0],[1 2*0.03*4 4^2]) );
 
 figure(10)
 clf
 subplot(2,5,1)
 rlocus(G)
 %axis(rlocaxis)
+axis equal
 
 subplot(2,5,2)
 bode(G)
 
+%{
 %% Notch Controller
 z = 4;
 p = 100;
@@ -32,12 +34,15 @@ figure(10)
 subplot(2,5,3)
 rlocus(L)
 %axis(rlocaxis)
+axis equal
 
 subplot(2,5,4)
 bode(L)
+%}
+D1 = 1
 
 %% Derivative Controller
-D2 = tf([1 1/1000],1);
+D2 = tf([1 10],1);
 
 L = G*D2*D1;
 
@@ -45,12 +50,13 @@ figure(10)
 subplot(2,5,5)
 rlocus(L)
 %axis(rlocaxis)
+axis equal
 
 subplot(2,5,6)
 bode(L)
 
 %% Adjust Gain
-K = 0.68;
+K = 0.02;
 
 L = G*D1*D2;
 
@@ -62,11 +68,12 @@ hold on
 plot(real(poles),imag(poles),'r*')
 hold off
 %axis(rlocaxis)
+axis equal
 
 subplot(2,5,8)
 bode(L*K)
 
-%% Closed Loop 1
+% Closed Loop 1
 C = D1*D2*K;
 T = C*G/(1+C*G);
 figure(10)

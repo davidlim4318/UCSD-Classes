@@ -100,7 +100,7 @@ d2 = 1.657e-6;
 
 G = tf(k2, [m1*m2 (d1*m2 + d2*m1) (d1*d2 + k2*m1 + k2*m2) (d1*k2 + d2*k2) 0]);
 
-G = 200*tf( conv([1 15],[1 2*0.05*3 3^2]) , conv([1 0 0],[1 2*0.03*4 4^2]) );
+G = 7*tf( conv([1 500], [1 2*0.02*3 3^2]) , conv([1 0 0],[1 2*0.03*4 4^2]) );
 
 [mag, ~] = bode(G,f_1);
 a = zeros(length(mag),1);
@@ -132,16 +132,3 @@ a = zeros(length(mag),1);
 a(1:end) = mag(1,1,1:end);
 
 plot(f_2,mag2db(a))
-
-%%
-syms m1 m2 d1 k2
-eqn1 = m1*m2 == beta(1);
-eqn2 = d1*m2 == beta(2);
-eqn3 = k2*m1 + k2*m2 == beta(3);
-eqn4 = d1*k2 == beta(4);
-
-[m1,m2,d1,k2] = solve([eqn1,eqn2,eqn3,eqn4],[m1,m2,d1,k2]);
-m1 = double(m1);
-m2 = double(m2);
-d1 = double(d1);
-k2 = double(k2);

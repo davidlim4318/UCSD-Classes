@@ -95,8 +95,8 @@ fs_2 = 1/mean(diff(time));
 %Txy_2 = smoothdata(Txy_2,'lowess',20);
 
 k2 = 2.710e-3;
-m1 = 3.595e-6;
-d1 = 4.320e-5;
+m1 = 5.783e-6;
+d1 = 5.885e-5;
 m2 = 7.441e-6;
 d2 = 7.772e-6;
 

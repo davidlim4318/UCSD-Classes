@@ -4,7 +4,7 @@ ks = zeros(5,1);
 ms = zeros(5,1);
 ds = zeros(5,1);
 
-n = 3;
+n = 1;
 w = 100;
 
 x1_data = zeros(677,5);
@@ -57,7 +57,7 @@ for i = 1:5
     
     ax = gca;
     ax.TitleHorizontalAlignment = 'left';
-    set(ax,'FontSize',12)
+    set(ax,'FontSize',18)
 
     pause()
 end
@@ -95,7 +95,7 @@ title("(a)")
 legend('Displacement','Force')  
 ax = gca;
 ax.TitleHorizontalAlignment = 'left';
-set(ax,'FontSize',12)
+set(ax,'FontSize',18)
 
 [y_pks,t_pks] = findpeaks(x1_mean,time,'NPeaks',n+1);
 
@@ -110,3 +110,30 @@ beta = beta_omega_n/omega_n;
 k_ = 0.5/y_ss;
 m_ = k_/omega_n^2;
 d_ = k_*2*beta/omega_n;
+
+
+%%
+x1_mean = mean(x1_data,2);
+
+syms t s
+% G = tf(1, [m d 0]);
+G = 1 / (m*s^2 + d*s + k);
+u = 0.5 - 0.5*heaviside(t-3);
+U = laplace(u);
+Y = G*U;
+y = ilaplace(Y);
+
+figure(3)
+clf
+hold on
+plot(time,x1_mean,'b.','MarkerSize',10)
+fplot(y,[0,6],'r-','LineWidth',2)
+hold off
+
+ylabel("Displacement (counts)")
+xlabel("Time (s)")
+title("(b)")
+legend('Mean Data','Model')  
+ax = gca;
+ax.TitleHorizontalAlignment = 'left';
+set(ax,'FontSize',18)

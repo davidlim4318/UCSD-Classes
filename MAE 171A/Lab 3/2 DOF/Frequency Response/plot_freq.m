@@ -1,11 +1,10 @@
 clear
 
-%{
-M = readmatrix("lin_sweep_2.txt",'Whitespace',[';','[',']']);
+M = readmatrix("lin_sweep.txt",'Whitespace',[';','[',']']);
 time = M(:,3);
-x2 = M(:,4);
+x2 = M(:,5);
 %x2 = M(:,6);
-F = M(:,6);
+F = M(:,8);
 
 figure(1)
 clf
@@ -18,11 +17,13 @@ ylabel("Displacement (counts)")
 ax = gca;
 ax.YColor = 'k';
 
-yyaxis right
-plot(time,F,'m.','MarkerSize',10)
-ylabel("Force (V)")
-ax = gca;
-ax.YColor = 'm';
+plot(time,smoothdata(x2),'r-','LineWidth',2)
+
+% yyaxis right
+% plot(time,F,'m.','MarkerSize',10)
+% ylabel("Force (V)")
+% ax = gca;
+% ax.YColor = 'm';
 
 hold off
 title("(a)")
@@ -36,7 +37,7 @@ set(ax,'FontSize',12)
 %%
 clear
 
-M = readmatrix("log_sweep_2.txt",'Whitespace',[';','[',']']);
+M = readmatrix("lin_sweep_2.txt",'Whitespace',[';','[',']']);
 time = M(:,3);
 x2 = M(:,4);
 %x2 = M(:,6);
@@ -53,11 +54,13 @@ ylabel("Displacement (counts)")
 ax = gca;
 ax.YColor = 'k';
 
-yyaxis right
-plot(time,F,'m.','MarkerSize',10)
-ylabel("Force (V)")
-ax = gca;
-ax.YColor = 'm';
+plot(time,smoothdata(x2),'r-','LineWidth',2)
+
+% yyaxis right
+% plot(time,F,'m.','MarkerSize',10)
+% ylabel("Force (V)")
+% ax = gca;
+% ax.YColor = 'm';
 
 hold off
 title("(a)")
@@ -69,7 +72,6 @@ ax.TitleHorizontalAlignment = 'left';
 set(ax,'FontSize',12)
 
 %%
-%}
 M = readmatrix("lin_sweep.txt",'Whitespace',[';','[',']']);
 time = M(:,3);
 x2 = M(:,5);
@@ -98,13 +100,17 @@ d1 = 1.630e-5;
 m2 = 6.076e-6;
 d2 = 1.657e-6;
 
-G = tf(k2, [m1*m2 (d1*m2 + d2*m1) (d1*d2 + k2*m1 + k2*m2) (d1*k2 + d2*k2) 0]);
-
-G = 7*tf( conv([1 500], [1 2*0.02*3 3^2]) , conv([1 0 0],[1 2*0.03*4 4^2]) );
+G0 = tf(k2, [m1*m2 (d1*m2 + d2*m1) (d1*d2 + k2*m1 + k2*m2) (d1*k2 + d2*k2) 0]);
+G = 10000*tf( [1 2*0.02*3 3^2] , conv( conv([1 0],[1 2*0.03*4 4^2]) , [1 0.1] ) );
+% G = 350000000*tf( [1 2*0.02*3 3^2] , conv ( conv( conv([1 0],[1 2*0.03*4 4^2]) , [1 2*0.05*45 45^2] ) , [1 2]) );
 
 [mag, ~] = bode(G,f_1);
 a = zeros(length(mag),1);
 a(1:end) = mag(1,1,1:end);
+
+[mag, ~] = bode(G0,f_1);
+b = zeros(length(mag),1);
+b(1:end) = mag(1,1,1:end);
 
 figure(3)
 clf
@@ -112,10 +118,12 @@ semilogx(f_1,mag2db(abs(Txy_1)))
 hold on
 plot(f_2,mag2db(abs(Txy_2)))
 plot(f_1,mag2db(a),'LineWidth',5)
+plot(f_1,mag2db(b),'LineWidth',5)
 
 % syms s b1 b2 b3 b4 b5 b6 omega
 % G_sym = b6 * (s + b5) * (s^2 + 2*b4*s + b3^2) / ( s^2 * (s^2 + 2*b2*s + b1^2));
 
+%{
 %%
 options = statset('MaxIter',10000);
 
@@ -132,3 +140,4 @@ a = zeros(length(mag),1);
 a(1:end) = mag(1,1,1:end);
 
 plot(f_2,mag2db(a))
+%}

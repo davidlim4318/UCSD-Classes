@@ -1,11 +1,10 @@
 clear
 
-%{
-M = readmatrix("lin_sweep_2.txt",'Whitespace',[';','[',']']);
+M = readmatrix("lin_sweep.txt",'Whitespace',[';','[',']']);
 time = M(:,3);
-x2 = M(:,4);
+x2 = M(:,5);
 %x2 = M(:,6);
-F = M(:,6);
+F = M(:,8);
 
 figure(1)
 clf
@@ -18,11 +17,13 @@ ylabel("Displacement (counts)")
 ax = gca;
 ax.YColor = 'k';
 
-yyaxis right
-plot(time,F,'m.','MarkerSize',10)
-ylabel("Force (V)")
-ax = gca;
-ax.YColor = 'm';
+plot(time,smoothdata(x2),'r-','LineWidth',2)
+
+% yyaxis right
+% plot(time,F,'m.','MarkerSize',10)
+% ylabel("Force (V)")
+% ax = gca;
+% ax.YColor = 'm';
 
 hold off
 title("(a)")
@@ -36,7 +37,7 @@ set(ax,'FontSize',12)
 %%
 clear
 
-M = readmatrix("log_sweep_2.txt",'Whitespace',[';','[',']']);
+M = readmatrix("lin_sweep_2.txt",'Whitespace',[';','[',']']);
 time = M(:,3);
 x2 = M(:,4);
 %x2 = M(:,6);
@@ -53,11 +54,13 @@ ylabel("Displacement (counts)")
 ax = gca;
 ax.YColor = 'k';
 
-yyaxis right
-plot(time,F,'m.','MarkerSize',10)
-ylabel("Force (V)")
-ax = gca;
-ax.YColor = 'm';
+plot(time,smoothdata(x2),'r-','LineWidth',2)
+
+% yyaxis right
+% plot(time,F,'m.','MarkerSize',10)
+% ylabel("Force (V)")
+% ax = gca;
+% ax.YColor = 'm';
 
 hold off
 title("(a)")
@@ -69,7 +72,6 @@ ax.TitleHorizontalAlignment = 'left';
 set(ax,'FontSize',12)
 
 %%
-%}
 M = readmatrix("lin_sweep.txt",'Whitespace',[';','[',']']);
 time = M(:,3);
 x2 = M(:,5);
@@ -98,8 +100,9 @@ d1 = 1.630e-5;
 m2 = 6.076e-6;
 d2 = 1.657e-6;
 
-%G = tf(k2, [m1*m2 (d1*m2 + d2*m1) (d1*d2 + k2*m1 + k2*m2) (d1*k2 + d2*k2) 0]);
-G = 200*tf( conv([1 15],[1 2*0.05*3 3^2]) , conv([1 0 0],[1 2*0.03*4 4^2]) );
+% G = tf(k2, [m1*m2 (d1*m2 + d2*m1) (d1*d2 + k2*m1 + k2*m2) (d1*k2 + d2*k2) 0]);
+% G = 4000*tf( [1 2*0.02*3 3^2] , conv([1 0 0],[1 2*0.03*4 4^2]) );
+G = 5000000*tf( [1 2*0.02*3 3^2] , conv ( conv( conv([1 0],[1 2*0.03*4 4^2]) , [1 2*0.0005*45 45^2] ) , [1 0.03]) );
 
 [mag, ~] = bode(G,f_1);
 a = zeros(length(mag),1);
@@ -115,13 +118,14 @@ plot(f_1,mag2db(a),'LineWidth',5)
 % syms s b1 b2 b3 b4 b5 b6 omega
 % G_sym = b6 * (s + b5) * (s^2 + 2*b4*s + b3^2) / ( s^2 * (s^2 + 2*b2*s + b1^2));
 
+%
 %%
 options = statset('MaxIter',10000);
 
 %modelfun = @(b,omega) ( abs( b(6) .* (1j.*omega + b(5)) .* ((1j.*omega).^2 + 2.*b(4).*1j.*omega + b(3).^2) ./ ( (1j.*omega).^2 .* ((1j.*omega).^2 + 2.*b(2).*1j.*omega + b(1).^2 ) ) ) );
 %beta = nlinfit(f_2(1:1000),Txy_2(1:1000),modelfun,[4 0.03*4 3 0.05*3 15 200], options);
 
-modelfun = @(b,omega) ( abs ( (b(1).*(1j.*omega).^3 - b(2).*omega.^2 + b(3).*1j.*omega + b(4)) / (omega.^2 + b(5).*(1j.*omega).^3 - b(6).*omega.^2) ) );
+modelfun = @(b,omega) ( abs ( (b(1).*(1j.*omega).^3 - b(2).*omega.^2 + b(3).*1j.*omega + b(4)) ./ (omega.^4 + b(5).*(1j.*omega).^3 - b(6).*omega.^2) ) );
 beta = nlinfit(f_2(1:1000),Txy_2(1:1000),modelfun,[200 3060 2700 27000 0.24 16], options);
 
 G = beta(6)*tf( conv([1 beta(5)],[1 2*beta(4) beta(3)^2]) , conv([1 0 0],[1 2*beta(2) beta(1)^2]) );
@@ -131,16 +135,3 @@ a = zeros(length(mag),1);
 a(1:end) = mag(1,1,1:end);
 
 plot(f_2,mag2db(a))
-
-%%
-syms m1 m2 d1 k2
-eqn1 = m1*m2 == beta(1);
-eqn2 = d1*m2 == beta(2);
-eqn3 = k2*m1 + k2*m2 == beta(3);
-eqn4 = d1*k2 == beta(4);
-
-[m1,m2,d1,k2] = solve([eqn1,eqn2,eqn3,eqn4],[m1,m2,d1,k2]);
-m1 = double(m1);
-m2 = double(m2);
-d1 = double(d1);
-k2 = double(k2);

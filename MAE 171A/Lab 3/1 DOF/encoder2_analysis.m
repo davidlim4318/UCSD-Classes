@@ -100,5 +100,4 @@ omega_n = sqrt(omega_d^2+(beta_omega_n)^2);
 beta = beta_omega_n/omega_n;
 
 m_ = k/omega_n^2;
-d_ = k
-*2*beta/omega_n;
+d_ = k*2*beta/omega_n;

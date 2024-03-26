@@ -14,7 +14,7 @@ c_d = 0.3;
 
 %%
 v_0 = 38;
-theta_0 = 45`;
+theta_0 = 45;
 
 v_x = [v_0*cosd(theta_0) zeros(1,n)];
 v_y = [v_0*sind(theta_0) zeros(1,n)];

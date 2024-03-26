@@ -27,23 +27,30 @@ yPos = mydata(:,3); % only get y-coordinates first
 
 idx = find(yPos >= yMinPx & yPos <= yMaxPx); % find indices of data within bounds
 
-% obtain data within bounds
+
+% plot to check
+figure(6)
+clf
+
+mydata = readmatrix('DICe_solution_00.txt');
 strainYY = mydata(idx,12);
 xPos = mydata(idx,2);
 yPos = mydata(idx,3);
 
-% plot to check
-figure(01)
 scatter(xPos,yPos,[],strainYY,'filled')
 colorbar
-xlabel('x')
-ylabel('y')
-set(gca,'fontsize',20,'linewidth',2)
+title("(b)")
+xlabel('x (px)')
+ylabel('y (px)')
 axis equal
+axis([min(xPos)-60 max(xPos)+60 min(yPos)-15 max(yPos)+15])
+ax = gca;
+ax.TitleHorizontalAlignment = 'left';
+set(ax,'FontSize',16)
 
 %% Calculate average strains of each frame
 
-frames = 11; % number of frames
+frames = 16; % number of frames
 strainAvg = zeros(frames,1); % placehoder for data
 
 for i = 1:frames
@@ -60,4 +67,4 @@ plot(strainAvg) % plot average strain of each frame
 
 %% Save average strain data
 
-save("AverageStrainSample1","strainAvg");
+save("AverageStrain","strainAvg");

@@ -107,7 +107,8 @@ x2_mean = mean(x2_data,2);
 
 syms t s
 % G = tf(1, [m d 0]);
-Y = (m*s + d) / (m*s^2 + d*s + k) * 226;
+y_0 = 226;
+Y = (m*s + d) / (m*s^2 + d*s + k) * y_0;
 % u = 0.5 - 0.5*heaviside(t-3);
 % U = laplace(u);
 % Y = G*U;

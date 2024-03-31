@@ -13,7 +13,7 @@ A = pi*(D/2)^2;
 c_d = 0.3;
 
 %%
-v_0 = 38;
+v_0 = 30;
 theta_0 = 45;
 
 v_x = [v_0*cosd(theta_0) zeros(1,n)];

@@ -114,11 +114,19 @@ b(1:end) = mag(1,1,1:end);
 
 figure(3)
 clf
-semilogx(f_1,mag2db(abs(Txy_1)))
+semilogx(f_1,mag2db(abs(Txy_1)),'b.','MarkerSize',10)
 hold on
-plot(f_2,mag2db(abs(Txy_2)))
-plot(f_1,mag2db(a),'LineWidth',5)
-plot(f_1,mag2db(b),'LineWidth',5)
+%plot(f_2,mag2db(abs(Txy_2)))
+plot(f_1,mag2db(b),'r','LineWidth',1)
+%plot(f_1,mag2db(a),'m--','LineWidth',2)
+
+xlabel("Frequency (rad/s)")
+ylabel("Magnitude (dB)")
+legend('Data','Model','Location','best')
+
+ax = gca;
+ax.TitleHorizontalAlignment = 'left';
+set(ax,'FontSize',18)
 
 % syms s b1 b2 b3 b4 b5 b6 omega
 % G_sym = b6 * (s + b5) * (s^2 + 2*b4*s + b3^2) / ( s^2 * (s^2 + 2*b2*s + b1^2));

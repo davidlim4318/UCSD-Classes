@@ -58,3 +58,39 @@ legend('Data','Model','Control Effort','Location','best')
 ax = gca;
 ax.TitleHorizontalAlignment = 'left';
 set(ax,'FontSize',18)
+
+
+
+%% Revisited
+n_pad = 10;
+Ts = mean(diff(time));
+data = iddata( [zeros(n_pad,1); x1], [zeros(n_pad,1); F], Ts);
+data.InputName = 'Voltage';
+data.InputUnit = 'volts';
+data.OutputName = 'Position';
+data.OutputUnit = 'counts';
+data.TimeUnit = 'seconds';
+data.Tstart = -n_pad*Ts;
+
+% Plot data
+figure(4)
+clf
+plot(data)
+set(findall(gcf,'Type','Line'),'LineStyle','none','Marker','.','MarkerSize',10)
+%%
+Gss = ssest(data, 1:10);
+%%
+% Estimate transfer function model
+sysTF = tfest(data,4,3);
+
+% Validate transfer function model against data
+figure(5)
+clf
+compare(data,sysTF)
+
+set(findall(gcf,'Type','Line'),'LineWidth',1,'Marker','.','MarkerSize',10)
+set(findall(gcf,'Type','Legend'),'Location','Best')
+
+figure(6)
+clf
+bode(sysTF)

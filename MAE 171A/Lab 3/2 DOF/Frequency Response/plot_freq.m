@@ -149,3 +149,25 @@ a(1:end) = mag(1,1,1:end);
 
 plot(f_2,mag2db(a))
 %}
+
+%% Revisited
+Txy = smoothdata(Txy_1,'lowess',20);
+data = frd(Txy(11:end-800),f_1(11:end-800));
+
+%%
+Gss = ssest(data, 1:10);
+%%
+% Estimate transfer function model
+sysTF = tfest(data,4,2);
+
+% Validate transfer function model against data
+figure(5)
+clf
+compare(data,sysTF)
+
+set(findall(gcf,'Type','Line'),'LineWidth',1,'Marker','.','MarkerSize',10)
+set(findall(gcf,'Type','Legend'),'Location','Best')
+
+figure(6)
+clf
+bode(sysTF)

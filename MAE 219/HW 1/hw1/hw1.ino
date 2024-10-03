@@ -2,16 +2,17 @@
 #include <math.h>
 
 // Pin declares
-int pwmPin = 5; // PWM output pin for motor 1
-int dirPin = 8; // direction output pin for motor 1
+int pwmPin = 5;  // PWM output pin for motor 1
+int dirPin = 8;  // direction output pin for motor 1
 
 // *************** Parameters for the haptic rendering *******************
 // Amplitude control variables
-float output = 0.0;     // output to send to the motor (between 0 and 255) --> should be rounded to an int
-float maxOutput = 255.0; // output cannot be above 255
+int output = 0;  // output to send to the motor (between 0 and 255) --> should be rounded to an int
+int maxOutput = 255;  // output cannot be above 255
 
-float A = 200;        // try range 
-float frequency = 25; // try range 
+float y;  // sinusoidal function value
+float A = 150;  // amplitude
+float frequency = 20;  // frequency 
 float timeSeconds;
 
 // --------------------------------------------------------------
@@ -30,8 +31,10 @@ void setup()
   pinMode(dirPin, OUTPUT);  // dir pin for motor A
   
   // Initialize motor 
-  analogWrite(pwmPin, 0);     // set to not be spinning (0/255)
+  analogWrite(pwmPin, 0);  // set to not be spinning (0/255)
   digitalWrite(dirPin, LOW);  // set direction
+
+  delay(3000);  // delay to allow for unplugging while unpowered
   
 }
 
@@ -46,30 +49,32 @@ void loop()
   //*************************************************************
 
   unsigned long currentMillis = millis();
-  timeSeconds = (float)currentMillis/64000; // convert to seconds (note: that there is a conversion needed due to the setPwmFrequency function we use, which changes the timers on the Arduino)
+  timeSeconds = (float)currentMillis/64000;  // convert to seconds (note: that there is a conversion needed due to the setPwmFrequency function we use, which changes the timers on the Arduino)
   
   // sine function with amplitude A and frequency in Hz
-  output = A*sin(2*PI*frequency*timeSeconds);
+  y = A*sin(2*PI*frequency*timeSeconds);
 
   // set the motor direction using the dirPin based on the sign of the output
-  if (output > 0) {
-    //digitalWrite(dirPin, LOW);  // set positive direction
+  if (y > 0) {  // if y is positive
+    digitalWrite(dirPin, LOW);  // set direction pin to low
   }
-  else {
-    //digitalWrite(dirPin, HIGH);  // set negative direction
+  else {  // if y is 0 or negative
+    digitalWrite(dirPin, HIGH);  // set direction pin to high, reversing the direction
   }
 
-  // Add in checks to make sure that the command sent to the motor is not greater than the maximum possible output
-  // (or less than the negative of the maximum)
-  output = constrain(output,-maxOutput,maxOutput);
+  // before sending to board, convert output to positive integer and limit output if greater than maximum allowed
+  output = abs(y);
+  output = min(output,maxOutput);
 
-  // send output to the motor using the pwmPin --> don't forget that the command needs to be a positive integer!
-  output = abs((int)output);
-  // analogWrite(pwmPin, output);
+  // send output to the motor using the pwmPin
+  analogWrite(pwmPin, output);
 
   // print output to check
   Serial.print("Time:");
   Serial.print(timeSeconds);
+  Serial.print(" ");
+  Serial.print("y:");
+  Serial.print(y);
   Serial.print(" ");
   Serial.print("Output:");
   Serial.println(output);

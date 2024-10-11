@@ -15,7 +15,9 @@ bh = 10;   % human hand damping, Ns/m
 
 % virtual wall parameters
 kwall = 500;   % wall stiffness, N/m
+% kwall = i) 500, iv) 50, v) 10000
 xwall = 0.025;   % wall position, m
+% xwall = i) 0.025, ii) 0.05, iii) -0.05
 
 % times for dynamic simulation
 tstart = 0;   % s
@@ -82,7 +84,7 @@ end
 figure(1); clf;
 
 % tick mark calculations just to make the plot look good !!!
-N = 6;
+N = 5;
 % find max
 xmax = max( abs([xd;xh]) );
 % create N tick marks above and below zero
@@ -127,4 +129,4 @@ xtickformat('%.1f')
 yticks(ftics)
 ytickformat('%.2f')
 
-sgtitle('Dynamic Simulation of a Haptic Interface: Part A','FontSize',16,'FontWeight','Bold')
+sgtitle('Dynamic Simulation of a Haptic Interface: Scenario (i)','FontSize',16,'FontWeight','Bold')

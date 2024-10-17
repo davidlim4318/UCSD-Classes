@@ -83,7 +83,7 @@ end
 
 figure(1); clf;
 
-% tick mark calculations just to make the plot look good !!!
+% tick mark calculations
 N = 5;
 % find max
 xmax = max( abs([xd;xh]) );

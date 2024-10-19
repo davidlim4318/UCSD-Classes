@@ -7,6 +7,66 @@
 // Includes
 #include <math.h>
 
+// Enviroment switching
+//#define ENABLE_VIRTUAL_WALL
+//#define ENABLE_LINEAR_DAMPING
+//#define ENABLE_TEXTURE
+//#define ENABLE_HARD_SURFACE
+//#define ENABLE_MASS_SPRING_DAMPER
+
+// Velocity estimate parameters
+double alpha = 0.2;
+unsigned long timeLast;
+double xhLast;
+double vh;
+double vhFilt;
+
+// A. Virtual wall parameters
+#ifdef ENABLE_VIRTUAL_WALL
+  double xWall = 0.005;
+  double k = 250;
+#endif
+
+// B. Linear damping parameters
+#ifdef ENABLE_LINEAR_DAMPING
+  double b = 4;
+#endif
+
+// C. Texture parameters
+#ifdef ENABLE_TEXTURE
+  double forceMax = 0.5;
+  double wavelength = 0.005;
+#endif
+
+// D. Hard surface parameters
+#ifdef ENABLE_HARD_SURFACE
+  double xWall = 0.005;
+  double k = 150;
+  double gamma = 40;
+  double freq = 30;
+  double A = 20;
+  bool impact;
+  unsigned long timeImpact;
+  double vhImpact;
+#endif
+
+// E. Mass-spring-damper parameters
+#ifdef ENABLE_MASS_SPRING_DAMPER
+  double x0 = 0.01;
+  double m = 2;
+  double b = 1;
+  double k = 300;
+  double ku = 1000;
+  double xm = x0;
+  double vm;
+  double am;
+  double Fu;
+  double Fk;
+  double Fb;
+  unsigned long tLast;
+  unsigned long dt;
+#endif
+
 // Pin declares
 int pwmPin = 5; // PWM output pin for motor 1
 int dirPin = 8; // direction output pin for motor 1
@@ -111,13 +171,19 @@ void loop()
 
   // ADD YOUR CODE HERE
   // Define kinematic parameters you may need
-     //double rh = ?;   //[m]
+  double rh = 0.070;  //[m]
   // Step B.1: print updatedPos via serial monitor
-  Serial.print("updatedPos: ");
-  Serial.println(updatedPos);
+  Serial.print("updatedPos:");
+  Serial.print(updatedPos);
+  Serial.print(" ");
   // Step B.6: double ts = ?; // Compute the angle of the sector pulley (ts) in degrees based on updatedPos
+  double ts = 0.01326 * updatedPos - 7.28;
   // Step B.7: xh = ?;       // Compute the position of the handle (in meters) based on ts (in radians)
+  double xh = rh * PI * ts / 180.;
   // Step B.8: print xh via serial monitor
+  Serial.print("xh:");
+  Serial.print(xh,4);
+  Serial.print(" ");
   
   //*************************************************************
   //*** Section 3. Assign a motor output force in Newtons *******  
@@ -125,10 +191,15 @@ void loop()
  
   // ADD YOUR CODE HERE
   // Define kinematic parameters you may need
-     //double rp = ?;   //[m]
-     //double rs = ?;   //[m] 
+  double rp = 0.005;  //[m]
+  double rs = 0.074;  //[m]
   // Step C.1: force = ?; // You will generate a force by simply assigning this to a constant number (in Newtons)
+    //force = 0.12;
   // Step C.2: Tp = ?;    // Compute the require motor pulley torque (Tp) to generate that force
+    //Tp = rh * rp * force / rs;
+    //Serial.print("Duty cycle:");
+    //Serial.print(sqrt(abs(Tp)/0.0183));
+    //Serial.println(" ");
 
   //*************************************************************
   //******************* Rendering Algorithms ********************
@@ -136,7 +207,100 @@ void loop()
   // ADD YOUR CODE HERE
   // NOTE: good to use #ifdef statements for the various environments
 
-  
+  // Velocity estimate and filtering
+  vh = (xh - xhLast) / (getTimeMillis() - timeLast) * 1000;
+  vhFilt = alpha*vh + (1 - alpha)*vhFilt;
+  xhLast = xh;
+  timeLast = getTimeMillis();
+  Serial.print("time:");
+  Serial.print(timeLast);
+  Serial.println(" ");
+
+  #ifdef ENABLE_VIRTUAL_WALL
+    if (xh > xWall){
+      force = k * (xWall - xh);
+    }
+    else {
+      force = 0;
+    }
+    Serial.print("force:");
+    Serial.print(force);
+    Serial.println(" ");
+  #endif
+
+  #ifdef ENABLE_LINEAR_DAMPING
+    if (abs(vhFilt) > 0.005){
+      force = -b * vhFilt;
+    }
+    else {
+      force = 0;
+    }
+    Serial.print("vh:");
+    Serial.print(vh,4);
+    Serial.print(" ");
+    Serial.print("vhFilt:");
+    Serial.print(vhFilt,4);
+    Serial.print(" ");
+    Serial.print("force:");
+    Serial.print(force);
+    Serial.println(" ");
+  #endif
+
+  #ifdef ENABLE_TEXTURE
+    force = forceMax*sin(2*PI*xh/wavelength);
+    Serial.print("force:");
+    Serial.print(force);
+    Serial.println(" ");
+  #endif
+
+  #ifdef ENABLE_HARD_SURFACE
+    if (xh > xWall){
+      if (!impact) {
+        timeImpact = getTimeMillis();
+        vhImpact = vhFilt;
+        impact = true;
+      }
+      double time = getTimeMillis();
+      force = k * (xWall - xh) - A * vhImpact * exp(-gamma * (time - timeImpact) / 1000.) * sin(2 * PI * freq * (time - timeImpact) / 1000.);
+    }
+    else {
+      impact = false;
+      force = 0;
+    }
+    Serial.print("force:");
+    Serial.print(force);
+    Serial.println(" ");
+  #endif
+
+  #ifdef ENABLE_MASS_SPRING_DAMPER
+    dt = getTimeMillis() - tLast;
+    tLast = getTimeMillis();
+    xm = xm + vm * dt / 1000;
+    vm = vm + am * dt / 1000;
+    if (xm < xh) {
+      xm = xh;
+      vm = 0;
+    }
+    if (xm < xh + x0) {
+      Fu = k * (xh + x0 - xm);
+    }
+    else {
+      Fu = 0;
+    }
+    Fk = k * (x0 - xm);
+    Fb = -b * vm;
+    am = (Fu + Fk + Fb) / m;
+
+    Serial.print("force:");
+    Serial.print(-Fu);
+    Serial.print(" ");
+    Serial.print("xm:");
+    Serial.print(xm,4);
+    Serial.println(" ");
+
+  #endif
+
+  Tp = rh * rp * force / rs;
  
   //*************************************************************
   //*** Section 4. Force output (do not change) *****************
@@ -161,6 +325,13 @@ void loop()
   
   output = (int)(duty* 255);   // convert duty cycle to output signal
   analogWrite(pwmPin,output);  // output the signal
+}
+
+// --------------------------------------------------------------
+// Function to rescale millis()
+// --------------------------------------------------------------
+unsigned long getTimeMillis() {
+  return millis()/64;
 }
 
 // --------------------------------------------------------------

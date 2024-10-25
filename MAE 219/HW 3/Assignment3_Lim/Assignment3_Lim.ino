@@ -1,73 +1,18 @@
 //--------------------------------------------------------------------------
 // Code to test basic Hapkit functionality (sensing and force output)
 // 04.11.14
-// Last updated by Tania Morimoto 2.01.23
+// Last updated by David Lim 10.18.24
 //--------------------------------------------------------------------------
 
 // Includes
 #include <math.h>
 
-// Enviroment switching
+// Enviroment switching (uncomment one at a time)
 //#define ENABLE_VIRTUAL_WALL
 //#define ENABLE_LINEAR_DAMPING
 //#define ENABLE_TEXTURE
 //#define ENABLE_HARD_SURFACE
 #define ENABLE_MASS_SPRING_DAMPER
-
-// Time and time step variable
-double t;
-double tLast;
-double dt;
-
-// Velocity estimate parameters
-double alpha = 0.2;
-double xhLast;
-double vh;
-double vhFilt;
-
-// A. Virtual wall parameters
-#ifdef ENABLE_VIRTUAL_WALL
-  double xWall = 0.005;
-  double k = 250;
-#endif
-
-// B. Linear damping parameters
-#ifdef ENABLE_LINEAR_DAMPING
-  double b = 4;
-#endif
-
-// C. Texture parameters
-#ifdef ENABLE_TEXTURE
-  double forceMax = 0.5;
-  double wavelength = 0.005;
-#endif
-
-// D. Hard surface parameters
-#ifdef ENABLE_HARD_SURFACE
-  double xWall = 0.005;
-  double k = 150;
-  double gamma = 40;
-  double freq = 30;
-  double A = 100;
-  bool impact;
-  unsigned long tImpact;
-  double vhImpact;
-#endif
-
-// E. Mass-spring-damper parameters
-#ifdef ENABLE_MASS_SPRING_DAMPER
-  double x0 = 0.01;
-  double m = 2;
-  double b = 1;
-  double k = 300;
-  double ku = 1000;
-  double xm = x0;
-  double vm;
-  double am;
-  double Fu;
-  double Fk;
-  double Fb;
-#endif
 
 // Pin declares
 int pwmPin = 5; // PWM output pin for motor 1
@@ -93,6 +38,61 @@ double OFFSET_NEG = 15;
 
 // Kinematics variables
 double xh = 0;           // position of the handle [m]
+
+// Time and time step variables
+double t;   // time [s]
+double tLast;   // time [s] from previous loop
+double dt;   // time step [s]
+
+// Velocity estimate variables
+double alpha = 0.2;   // IIR filter parameter
+double xhLast;   // xh [m] from previous loop
+double vh;   // velocity [m/s] of the handle, unfiltered
+double vhFilt;   // vh [m/s], IIR filtered
+
+// A. Virtual wall variables
+#ifdef ENABLE_VIRTUAL_WALL
+  double xWall = 0.005;   // position [m] of the wall
+  double k = 250;   // stiffness [N/m] of the wall
+#endif
+
+// B. Linear damping variables
+#ifdef ENABLE_LINEAR_DAMPING
+  double b = 4;   // damping coefficient [N*s/m]
+#endif
+
+// C. Texture variables
+#ifdef ENABLE_TEXTURE
+  double forceMax = 0.5;   // force amplitude [N] of the bumps
+  double wavelength = 0.005;   // wavelength [m] of the bumps
+#endif
+
+// D. Hard surface variables
+#ifdef ENABLE_HARD_SURFACE
+  double xWall = 0.005;   // position [m] of the wall
+  double k = 150;   // stiffness [N*s/m] of the wall
+  double gamma = 100;   // exponential decay rate [s^-1] of the vibration
+  double freq = 30;   // frequency [Hz] of the vibration
+  double A = 100;   // force amplitude [N] of the vibration
+  bool impact;   // boolean indicating that an impact has happened
+  double tImpact;   // time [s] of the impact
+  double vhImpact;   // velocity [m/s] of the impact
+#endif
+
+// E. Mass-spring-damper variables
+#ifdef ENABLE_MASS_SPRING_DAMPER
+  double x0 = 0.01;   // equilibrium position [m] of the mass
+  double m = 2;   // mass [kg] of the mass
+  double b = 1;   // damping coefficient [N*s/m] on the mass
+  double k = 300;   // spring constant [N/m] on the mass
+  double ku = 1000;   // spring constant [N/m] between the user and the mass
+  double xm = x0;   // position [m] of the mass (starts at the equilibrium position)
+  double vm;   // velocity [m/s] of the mass
+  double am;   // acceleration [m/s^2] of the mass
+  double Fu;   // force [N] between the user and the block
+  double Fk;   // force [N] of the spring
+  double Fb;   // force [N] of the damper
+#endif
 
 // Force output variables
 double force = 0;           // force at the handle
@@ -171,9 +171,8 @@ void loop()
   //*** Section 2. Compute position in meters *******************
   //*************************************************************
 
-  // ADD YOUR CODE HERE
   // Define kinematic parameters you may need
-  double rh = 0.070;  //[m]
+  double rh = 0.070;   // radius [m] of the handle
   // Step B.1: print updatedPos via serial monitor
   Serial.print("updatedPos:");
   Serial.print(updatedPos);
@@ -191,10 +190,9 @@ void loop()
   //*** Section 3. Assign a motor output force in Newtons *******  
   //*************************************************************
  
-  // ADD YOUR CODE HERE
   // Define kinematic parameters you may need
-  double rp = 0.005;  //[m]
-  double rs = 0.074;  //[m]
+  double rp = 0.005;   // radius [m] of the pulley
+  double rs = 0.074;   // radius [m] of the sector
   // Step C.1: force = ?; // You will generate a force by simply assigning this to a constant number (in Newtons)
   // force = 0.12;
   // Step C.2: Tp = ?;    // Compute the require motor pulley torque (Tp) to generate that force
@@ -203,17 +201,15 @@ void loop()
   //*************************************************************
   //******************* Rendering Algorithms ********************
   //*************************************************************
-  // ADD YOUR CODE HERE
-  // NOTE: good to use #ifdef statements for the various environments
 
-  tLast = t;
-  t = micros() / 64. / 1000000.;
-  dt = t - tLast;
+  tLast = t;   // store previous time [s]
+  t = micros() / 64. / 1000000.;   // store current time (scaled by 1/64 since clock speed is affected by PWM code)
+  dt = t - tLast;   // compute time step
 
   // Velocity estimate and filtering
-  vh = (xh - xhLast) / (t - tLast);
-  vhFilt = alpha*vh + (1 - alpha)*vhFilt;
-  xhLast = xh;
+  vh = (xh - xhLast) / (t - tLast);   // compute the velocity of the handle with numerical differentiation of the handle position (first-order divided difference)
+  vhFilt = alpha*vh + (1 - alpha)*vhFilt;   // filter vh using a first-order IIR filter
+  xhLast = xh;   // store the previous handle position
   // Serial.print("vh:");
   // Serial.print(vh,4);
   // Serial.print(" ");
@@ -223,72 +219,75 @@ void loop()
 
 
   #ifdef ENABLE_VIRTUAL_WALL
-    if (xh > xWall){
-      force = k * (xWall - xh);
+    if (xh > xWall) {   // if the handle is inside the wall
+      force = k * (xWall - xh);   // compute spring force
     }
-    else {
-      force = 0;
+    else {   // if the handle is outside the wall
+      force = 0;   // force is zero
     }
   #endif
 
 
   #ifdef ENABLE_LINEAR_DAMPING
-    if (abs(vhFilt) > 0.005){
-      force = -b * vhFilt;
+    if (abs(vhFilt) > 0.005) {   // if the filtered velocity magnitude is greater than a threshold
+      force = -b * vhFilt;   // compute damping force
     }
-    else {
-      force = 0;
+    else {   // if the filtered velocity magnitude is less than the threshold
+      force = 0;   // force is zero
     }
   #endif
 
 
   #ifdef ENABLE_TEXTURE
-    force = forceMax*sin(2*PI*xh/wavelength);
+    force = forceMax*sin(2*PI*xh/wavelength);   // compute force as a sinusoidal function of the handle position
   #endif
 
 
   #ifdef ENABLE_HARD_SURFACE
-    if (xh > xWall){
-      if (!impact) {
-        tImpact = t;
-        vhImpact = vhFilt;
-        impact = true;
+    if (xh > xWall) {   // if the handle is inside the wall
+      if (!impact) {   // if an impact was not previously detected
+        tImpact = t;   // store the time of the impact
+        vhImpact = vhFilt;   // store the velocity of the impact
+        impact = true;   // impact has been detected
       }
+      // compute force as a spring force plus a decaying sinusoid that starts at the time of the impact
       force = k * (xWall - xh) - A * vhImpact * exp(-gamma * (t - tImpact)) * sin(2 * PI * freq * (t - tImpact));
     }
-    else {
-      impact = false;
-      force = 0;
+    else {   // if the handle is outside the wall
+      impact = false;   // impact has not been detected
+      force = 0;   // force is zero
     }
   #endif
 
+
   #ifdef ENABLE_MASS_SPRING_DAMPER
-    vm = vm + am * dt;
-    xm = xm + vm * dt;
-    if (xm < xh) {
-      xm = xh;
-      vm = 0;
+    vm = vm + am * dt;   // compute the current mass velocity
+    xm = xm + vm * dt;   // compute the current mass position
+    if (xm < xh) {   // if the mass is to the left of the handle (collision detection)
+      xm = xh;   // set the mass position equal to the handle position
+      vm = 0;   // set the mass velocity equal to zero (inelastic collision)
     }
-    if (xm < xh + x0) {
-      Fu = k * (xh + x0 - xm);
+    if (xm < xh + x0) {   // if the handle is close enough to the mass
+      Fu = k * (xh + x0 - xm);   // compute the spring force between the handle and the mass
     }
-    else {
-      Fu = 0;
+    else {   // if the handle is not close enough to the mass
+      Fu = 0;   // force = 0
     }
-    Fk = k * (x0 - xm);
-    Fb = -b * vm;
-    am = (Fu + Fk + Fb) / m;
-    force = -Fu;
+    Fk = k * (x0 - xm);   // compute the spring force on the mass
+    Fb = -b * vm;   // compute the damping force on the mass
+    am = (Fu + Fk + Fb) / m;   // compute the acceleration of the mass
+    force = -Fu;   // render the force to the user
     Serial.print("xm:");
     Serial.print(xm,4);
     Serial.print(" ");
   #endif
 
+
   Serial.print("force:");
   Serial.print(force);
   Serial.println(" ");
   
-  Tp = rh * rp * force / rs;
+  Tp = rh * rp * force / rs;   // compute the torque required to output the desired force
 
   //*************************************************************
   //*** Section 4. Force output (do not change) *****************

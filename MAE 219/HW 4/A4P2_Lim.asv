@@ -31,20 +31,25 @@ xwall = 0.025;   % wall position, m
 
 % ****************************************
 % effect-specific parameters
-effect = "actuator_saturation";   % change this to switch between effects
+effect = "Sensor Quantization";   % change this to change the effect
 switch effect
-    case "sensor_quantization"
+    case "Sensor Quantization"
+        label = "Nominal System Parameters";
         deltax = 0.0005;   % position sensor resolution, m
-    case "nonlinear_friction"
+    case "Nonlinear Friction"
+        label = "User Moves in Free Space";
         xwall = 0.05;   % user moving in free space
         vt = 0.01;   % speed threshold, m/s
         bl = 10*b;   % large damping, Ns/m
-    case "actuator_saturation"
+    case "Actuator Saturation"
+        label = "User Moves Inside Wall";
         xwall = -0.05;   % user moving inside wall
         ft = 15;   % force threshold, N
-    case "sample_and_hold"
+    case "Sample and Hold"
+        label = "Nominal System Parameters";
         deltat = 0.05;   % sampling period
-    case "zero_order_hold"
+    case "Zero-Order Hold"
+        label = "Nominal System Parameters";
         deltat = 0.05;   % hold period
 end
 % ****************************************
@@ -60,81 +65,95 @@ xq = zeros(length(t),1);   % measured position
 
 %% Dynamic Simulation
 
-for i = 1:length(t)
-    % integrate the main state derivatives
-    if (i == 1)
-        % first time step has no difference between desired and actual
-        % handle position
-        vh(i) = vd(i);
-        xh(i) = xd(i);
+for sim = 1:2
+    
+    for i = 1:length(t)
+    
+        % integrate the main state derivatives
+        if (i == 1)
+            % first time step has no difference between desired and actual handle position
+            vh(i) = vd(i);
+            xh(i) = xd(i);
+        else
+            % simple Euler integration (you could use something more accurate!)
+            vh(i) = vh(i-1) + ah(i-1) * T; 
+            xh(i) = xh(i-1) + vh(i-1) * T; 
+        end
+        
+        xq(i) = xh(i);
+    
+        % ****************************************
+        if effect == "Sample and Hold" & sim == 2   % if sample and hold in effect
+            if rem(t(i),deltat) ~= 0   % if not time to sample position
+                xq(i) = xq(i-1);   % hold previous position measurement
+            end
+        end
+        % ****************************************
+        
+        % ****************************************
+        if effect == "Sensor Quantization" & sim == 2   % if sensor quantization in effect
+            xq(i) = deltax * floor(xh(i)/deltax);   % quantization of xh with resolution deltax
+        end
+        % ****************************************
+    
+        % force applied by the virtual environment
+        if (xq(i) > xwall)   % if the user is inside the wall
+            fa(i) = kwall * (xwall - xq(i));
+        else   % if the user is outside the wall
+            fa(i) = 0;
+        end
+    
+        % ****************************************
+        if effect == "Zero-Order Hold" & sim == 2   % if zero-order hold in effect
+            if rem(t(i),deltat) ~= 0   % if not time to update the force
+                fa(i) = fa(i-1);   % hold previous force output
+            end
+        end
+        % ****************************************
+    
+        % ****************************************
+        if effect == "Actuator Saturation" & sim == 2   % if actuator saturation in effect
+            if abs(fa(i)) > ft   % if actuator is saturated
+                fa(i) = sign(fa(i)) * ft;   % limit force applied
+            end
+        end
+        % ****************************************
+    
+        % force between the hand and the handle
+        fh = kh * (xd(i) - xh(i)) + bh * (vd(i) - vh(i));
+    
+        % force felt by the user
+        ffelt(i) = -fh;
+    
+        % default friction force
+        ff = -b * vh(i);
+    
+        % ****************************************
+        if effect == "Nonlinear Friction" & sim == 2   % if nonlinear friction if effect
+            if abs(vh(i)) < vt   % if speed within threshold
+                ff = -bl * vh(i);   % large damping
+            end
+        end
+        % ****************************************
+    
+        % Compute the sum of forces on the handle: applied force, human force, and friction force. 
+        ftotal = fa(i) + fh + ff;
+    
+        % Compute the handle's new acceleration for the next iteration.
+        ah(i) = ftotal / m;
+        
+    end
+
+    if sim == 1   % if ran simulation without effect
+        % save data in matrices
+        xdata1 = [xwall*ones(1,length(t))' xd xh];
+        fdata1 = [fa, ffelt];
     else
-        % simple Euler integration (you could use something more accurate!)
-        vh(i) = vh(i-1) + ah(i-1) * T; 
-        xh(i) = xh(i-1) + vh(i-1) * T; 
-    end
-    
-    xq(i) = xh(i);
-
-    % ****************************************
-    if effect == "sample_and_hold"   % if sample and hold in effect
-        if rem(t(i),deltat) ~= 0   % if not time to sample position
-            xq(i) = xq(i-1);   % hold previous position measurement
-        end
-    end
-    % ****************************************
-    
-    % ****************************************
-    if effect == "sensor_quantization"   % if sensor quantization in effect
-        xq(i) = deltax * floor(xh(i)/deltax);   % quantization of xh with resolution deltax
-    end
-    % ****************************************
-
-    % force applied by the virtual environment
-    if (xq(i) > xwall)   % if the user is inside the wall
-        fa(i) = kwall * (xwall - xq(i));
-    else   % if the user is outside the wall
-        fa(i) = 0;
+        % save data in matrices
+        xdata2 = [xwall*ones(1,length(t))' xd xh];
+        fdata2 = [fa, ffelt];
     end
 
-    % ****************************************
-    if effect == "zero_order_hold"   % if zero-order hold in effect
-        if rem(t(i),deltat) ~= 0   % if not time to update the force
-            fa(i) = fa(i-1);   % hold previous force output
-        end
-    end
-    % ****************************************
-
-    % ****************************************
-    if effect == "actuator_saturation"   % if actuator saturation in effect
-        if abs(fa(i)) > ft   % if actuator is saturated
-            fa(i) = sign(fa(i)) * ft;   % limit force applied
-        end
-    end
-    % ****************************************
-
-    % force between the hand and the handle
-    fh = kh * (xd(i) - xh(i)) + bh * (vd(i) - vh(i));
-
-    % force felt by the user
-    ffelt(i) = -fh;
-
-    % default friction force
-    ff = -b * vh(i);
-
-    % ****************************************
-    if effect == "nonlinear_friction"   % if nonlinear friction if effect
-        if abs(vh(i)) < vt   % if speed within threshold
-            ff = -bl * vh(i);   % large damping
-        end
-    end
-    % ****************************************
-
-    % Compute the sum of forces on the handle: applied force, human force, and friction force. 
-    ftotal = fa(i) + fh + ff;
-
-    % Compute the handle's new acceleration for the next iteration.
-    ah(i) = ftotal / m;
-    
 end
 
 %% Plotting
@@ -144,47 +163,84 @@ figure(1); clf;
 % tick mark calculations
 N = 5;
 % find max
-xmax = max( abs([xd;xh]) );
+xmax = max( [abs(xdata1) abs(xdata2)] ,[],"all");
 % create N tick marks above and below zero
 xtic = round( xmax/N, 1,'significant');
 xtics = [-fliplr(xtic:xtic:xmax) 0 xtic:xtic:xmax];
 % find max
-fmax = max(abs([fa;ffelt]));
+fmax = max( [abs(fdata1) abs(fdata2)] ,[],"all");
 % create N tick marks above and below zero
 ftic = round( fmax/N, 1,'significant');
 ftics = [-fliplr(ftic:ftic:fmax) 0 ftic:ftic:fmax];
 
-% positions in top subplot
-subplot(2,1,1)
-h = plot(t, xwall*ones(1,length(t)), t, xd, t, xh);
+% positions without effect
+subplot(2,2,1)
+h = plot(t, xdata1);
 set(h(1),'Color',[0 0 0],'LineWidth',1.0,'LineStyle','--')
 set(h(2),'Color',[1 .3 0],'LineWidth',1)
 set(h(3),'Color',[.8 0 .8],'LineWidth',2)
 xlabel('time (s)')
 ylabel('position (m)')
 legend('x_{wall}: virtual surface','x_d: user''s desired position','x_h: handle position')
-title('Positions vs. Time','FontWeight','Normal')
+subtitle(append('Without ',effect))
 axis([tstart tend -xmax xmax])
-set(gca,'FontSize',16)
+set(gca,'FontSize',14)
+title('Positions vs. Time','FontWeight','Normal','FontSize',18)
 xticks(0:0.5:tend)
 xtickformat('%.1f')
 yticks(xtics)
 ytickformat('%.3f')
 
-% forces in bottom subplot
-subplot(2,1,2)
-h = plot(t, fa, t, ffelt);
+% positions with effect
+subplot(2,2,2)
+h = plot(t, xdata2);
+set(h(1),'Color',[0 0 0],'LineWidth',1.0,'LineStyle','--')
+set(h(2),'Color',[1 .3 0],'LineWidth',1)
+set(h(3),'Color',[.8 0 .8],'LineWidth',2)
+xlabel('time (s)')
+ylabel('position (m)')
+legend('x_{wall}: virtual surface','x_d: user''s desired position','x_h: handle position')
+subtitle(append('With ',effect))
+axis([tstart tend -xmax xmax])
+set(gca,'FontSize',14)
+title('Positions vs. Time','FontWeight','Normal','FontSize',18)
+xticks(0:0.5:tend)
+xtickformat('%.1f')
+yticks(xtics)
+ytickformat('%.3f')
+
+% forces without effect
+subplot(2,2,3)
+h = plot(t, fdata1);
 set(h(1),'Color',[0 .8 .2],'LineWidth',1)
 set(h(2),'Color',[0 .2 .8],'LineWidth',2)
 xlabel('time (s)')
 ylabel('force (N)')
 legend('f_a: force applied by device','f_{felt}: force felt by user')
-title('Forces vs. Time','FontWeight','Normal')
+subtitle(append('Without ',effect))
 axis([tstart tend -fmax fmax])
-set(gca,'FontSize',16)
+set(gca,'FontSize',14)
+title('Forces vs. Time','FontWeight','Normal','FontSize',18)
 xticks(0:0.5:tend)
 xtickformat('%.1f')
 yticks(ftics)
 ytickformat('%.2f')
 
-sgtitle('Dynamic Simulation of a Haptic Interface: Scenario (i)','FontSize',16,'FontWeight','Bold')
+% forces with effect
+subplot(2,2,4)
+h = plot(t, fdata2);
+set(h(1),'Color',[0 .8 .2],'LineWidth',1)
+set(h(2),'Color',[0 .2 .8],'LineWidth',2)
+xlabel('time (s)')
+ylabel('force (N)')
+legend('f_a: force applied by device','f_{felt}: force felt by user')
+subtitle(append('With ',effect))
+axis([tstart tend -fmax fmax])
+set(gca,'FontSize',14)
+title('Forces vs. Time','FontWeight','Normal','FontSize',18)
+xticks(0:0.5:tend)
+xtickformat('%.1f')
+yticks(ftics)
+ytickformat('%.2f')
+
+sgtitle(append('Haptic Device Simulation: ',label,'With ',effect),'FontSize',18,'FontWeight','Bold')

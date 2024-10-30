@@ -1,73 +1,18 @@
 //--------------------------------------------------------------------------
 // Code to test basic Hapkit functionality (sensing and force output)
 // 04.11.14
-// Last updated by Tania Morimoto 2.01.23
+// Last updated by David Lim 10.18.24
 //--------------------------------------------------------------------------
 
 // Includes
 #include <math.h>
 
-// Enviroment switching
-//#define ENABLE_VIRTUAL_WALL
-//#define ENABLE_LINEAR_DAMPING
-//#define ENABLE_TEXTURE
-//#define ENABLE_HARD_SURFACE
-#define ENABLE_MASS_SPRING_DAMPER
-
-// Time and time step variable
-double t;
-double tLast;
-double dt;
-
-// Velocity estimate parameters
-double alpha = 0.2;
-double xhLast;
-double vh;
-double vhFilt;
-
-// A. Virtual wall parameters
-#ifdef ENABLE_VIRTUAL_WALL
-  double xWall = 0.005;
-  double k = 250;
-#endif
-
-// B. Linear damping parameters
-#ifdef ENABLE_LINEAR_DAMPING
-  double b = 4;
-#endif
-
-// C. Texture parameters
-#ifdef ENABLE_TEXTURE
-  double forceMax = 0.5;
-  double wavelength = 0.005;
-#endif
-
-// D. Hard surface parameters
-#ifdef ENABLE_HARD_SURFACE
-  double xWall = 0.005;
-  double k = 150;
-  double gamma = 40;
-  double freq = 30;
-  double A = 100;
-  bool impact;
-  unsigned long tImpact;
-  double vhImpact;
-#endif
-
-// E. Mass-spring-damper parameters
-#ifdef ENABLE_MASS_SPRING_DAMPER
-  double x0 = 0.01;
-  double m = 2;
-  double b = 1;
-  double k = 300;
-  double ku = 1000;
-  double xm = x0;
-  double vm;
-  double am;
-  double Fu;
-  double Fk;
-  double Fb;
-#endif
+// Experiment switching
+#define parta1
+// #define parta2
+// #define partb
+// #define partc
+// #define parte
 
 // Pin declares
 int pwmPin = 5; // PWM output pin for motor 1
@@ -94,12 +39,34 @@ double OFFSET_NEG = 15;
 // Kinematics variables
 double xh = 0;           // position of the handle [m]
 
+// Time and time step variables
+double t;   // time [s]
+double tLast;   // time [s] from previous loop
+double dt;   // time step [s]
+
+// Velocity estimate variables
+double alpha = 0.10;   // IIR filter parameter
+double xhLast;   // xh [m] from previous loop
+double vh;   // velocity [m/s] of the handle, unfiltered
+double vhFilt;   // vh [m/s], IIR filtered
+
 // Force output variables
 double force = 0;           // force at the handle
 double Tp = 0;              // torque of the motor pulley
 double duty = 0;            // duty cylce (between 0 and 255)
 unsigned int output = 0;    // output command to the motor
 
+#ifdef partc
+  int T = 10;   // experiment time
+  bool stop;   // true when experiment has ended
+  int count;   // number of loops
+#endif
+
+// Virtual wall variables
+#ifdef parte
+  double xWall = 0.005;   // position [m] of the wall
+  double k = 600;   // stiffness [N/m] of the wall
+#endif
 
 // --------------------------------------------------------------
 // Setup function -- NO NEED TO EDIT
@@ -171,30 +138,28 @@ void loop()
   //*** Section 2. Compute position in meters *******************
   //*************************************************************
 
-  // ADD YOUR CODE HERE
   // Define kinematic parameters you may need
-  double rh = 0.070;  //[m]
+  double rh = 0.070;   // radius [m] of the handle
   // Step B.1: print updatedPos via serial monitor
-  Serial.print("updatedPos:");
-  Serial.print(updatedPos);
-  Serial.print(" ");
+  //Serial.print("updatedPos:");
+  //Serial.print(updatedPos);
+  //Serial.print(" ");
   // Step B.6: double ts = ?; // Compute the angle of the sector pulley (ts) in degrees based on updatedPos
   double ts = 0.01326 * updatedPos - 7.28;
   // Step B.7: xh = ?;       // Compute the position of the handle (in meters) based on ts (in radians)
   double xh = rh * PI * ts / 180.;
   // Step B.8: print xh via serial monitor
-  Serial.print("xh:");
-  Serial.print(xh,4);
-  Serial.print(" ");
+  //Serial.print("xh:");
+  //Serial.print(xh,4);
+  //Serial.print(" ");
   
   //*************************************************************
   //*** Section 3. Assign a motor output force in Newtons *******  
   //*************************************************************
  
-  // ADD YOUR CODE HERE
   // Define kinematic parameters you may need
-  double rp = 0.005;  //[m]
-  double rs = 0.074;  //[m]
+  double rp = 0.005;   // radius [m] of the pulley
+  double rs = 0.074;   // radius [m] of the sector
   // Step C.1: force = ?; // You will generate a force by simply assigning this to a constant number (in Newtons)
   // force = 0.12;
   // Step C.2: Tp = ?;    // Compute the require motor pulley torque (Tp) to generate that force
@@ -203,17 +168,15 @@ void loop()
   //*************************************************************
   //******************* Rendering Algorithms ********************
   //*************************************************************
-  // ADD YOUR CODE HERE
-  // NOTE: good to use #ifdef statements for the various environments
 
-  tLast = t;
-  t = micros() / 64. / 1000000.;
-  dt = t - tLast;
+  tLast = t;   // store previous time [s]
+  t = micros() / 64. / 1000000.;   // store current time (scaled by 1/64 since clock speed is affected by PWM code)
+  dt = t - tLast;   // compute time step
 
   // Velocity estimate and filtering
-  vh = (xh - xhLast) / (t - tLast);
-  vhFilt = alpha*vh + (1 - alpha)*vhFilt;
-  xhLast = xh;
+  vh = (xh - xhLast) / (t - tLast);   // compute the velocity of the handle with numerical differentiation of the handle position (first-order divided difference)
+  vhFilt = alpha*vh + (1 - alpha)*vhFilt;   // filter vh using a first-order IIR filter
+  xhLast = xh;   // store the previous handle position
   // Serial.print("vh:");
   // Serial.print(vh,4);
   // Serial.print(" ");
@@ -221,74 +184,67 @@ void loop()
   // Serial.print(vhFilt,4);
   // Serial.print(" ");
 
+  //******************* Part A1: Coulomb friction estimate *******************
+  #ifdef parta1
+    force = 0.001 * t + 0.25;   // increase the force slowly
+    Serial.print("force:");
+    Serial.print(force,3);   // print the current force
+    Serial.println(" ");
+  #endif
 
-  #ifdef ENABLE_VIRTUAL_WALL
-    if (xh > xWall){
-      force = k * (xWall - xh);
+  //******************* Part A2: Damping estimate *******************
+  #ifdef parta2
+  double b = 1.33;
+    if (abs(vhFilt) > 0.005) {   // if the filtered velocity magnitude is greater than a threshold
+      force = b * vhFilt;   // compute damping force
     }
-    else {
+    else {   // if the filtered velocity magnitude is less than the threshold
+      force = 0;   // force is zero
+    }
+  #endif
+
+  //******************* Part B: Position Quantization Estimation *******************
+  #ifdef partb
+    Serial.print("updatedPos:");
+    Serial.print(updatedPos);   // print the position in counts
+    Serial.println(" ");
+  #endif
+
+  //******************* Part C: Loop Period Estimation *******************
+  #ifdef partc
+    if (!stop) {   // if experiment allowed to continue
+      count = count + 1;   // increment loop counter
+    }
+    if (t > T) {   // if time elapsed exceeds experiment time
       force = 0;
-    }
-  #endif
-
-
-  #ifdef ENABLE_LINEAR_DAMPING
-    if (abs(vhFilt) > 0.005){
-      force = -b * vhFilt;
-    }
-    else {
-      force = 0;
-    }
-  #endif
-
-
-  #ifdef ENABLE_TEXTURE
-    force = forceMax*sin(2*PI*xh/wavelength);
-  #endif
-
-
-  #ifdef ENABLE_HARD_SURFACE
-    if (xh > xWall){
-      if (!impact) {
-        tImpact = t;
-        vhImpact = vhFilt;
-        impact = true;
+      stop = true;   // stop the experiment
+      Serial.print("Time:");
+      Serial.print(t,6);
+      Serial.println(" ");
+      Serial.print("Count:");
+      Serial.print(count);
+      Serial.println(" ");
+      Serial.print("Average period:");
+      Serial.print(t/count,6);   // print the result
+      Serial.println(" ");
+      while (1) {   // stop void loop
+        delay(1000);
       }
-      force = k * (xWall - xh) - A * vhImpact * exp(-gamma * (t - tImpact)) * sin(2 * PI * freq * (t - tImpact));
-    }
-    else {
-      impact = false;
-      force = 0;
     }
   #endif
 
-  #ifdef ENABLE_MASS_SPRING_DAMPER
-    vm = vm + am * dt;
-    xm = xm + vm * dt;
-    if (xm < xh) {
-      xm = xh;
-      vm = 0;
+  //******************* Part E: Virtual Wall *******************
+  #ifdef parte
+    if (xh > xWall) {   // if the handle is inside the wall
+      force = k * (xWall - xh);   // compute spring force
     }
-    if (xm < xh + x0) {
-      Fu = k * (xh + x0 - xm);
+    else {   // if the handle is outside the wall
+      force = 0;   // force is zero
     }
-    else {
-      Fu = 0;
-    }
-    Fk = k * (x0 - xm);
-    Fb = -b * vm;
-    am = (Fu + Fk + Fb) / m;
-    force = -Fu;
-    Serial.print("xm:");
-    Serial.print(xm,4);
-    Serial.print(" ");
+    Serial.println(updatedPos);
   #endif
-
-  Serial.print("force:");
-  Serial.print(force);
-  Serial.println(" ");
   
-  Tp = rh * rp * force / rs;
+  Tp = rh * rp * force / rs;   // compute the torque required to output the desired force
 
   //*************************************************************
   //*** Section 4. Force output (do not change) *****************

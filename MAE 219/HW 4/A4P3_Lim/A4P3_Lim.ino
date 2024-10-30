@@ -1,15 +1,15 @@
 //--------------------------------------------------------------------------
 // Code to test basic Hapkit functionality (sensing and force output)
 // 04.11.14
-// Last updated by David Lim 10.18.24
+// Last updated by David Lim 10.29.24
 //--------------------------------------------------------------------------
 
 // Includes
 #include <math.h>
 
 // Experiment switching
-#define parta1
-// #define parta2
+// #define parta1
+#define parta2
 // #define partb
 // #define partc
 // #define parte
@@ -186,17 +186,14 @@ void loop()
 
   //******************* Part A1: Coulomb friction estimate *******************
   #ifdef parta1
-    force = 0.001 * t + 0.25;   // increase the force slowly
-    Serial.print("force:");
-    Serial.print(force,3);   // print the current force
-    Serial.println(" ");
+    force = 0.15;   // counter friction force
   #endif
 
   //******************* Part A2: Damping estimate *******************
   #ifdef parta2
-  double b = 1.33;
+  double b = 0.13;
     if (abs(vhFilt) > 0.005) {   // if the filtered velocity magnitude is greater than a threshold
-      force = b * vhFilt;   // compute damping force
+      force = b * vhFilt + vhFilt/abs(vhFilt)*0.15;   // compute counter damping + counter friction force
     }
     else {   // if the filtered velocity magnitude is less than the threshold
       force = 0;   // force is zero

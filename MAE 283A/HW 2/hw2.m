@@ -42,15 +42,35 @@ title('Position vs. Time of a Mass-Spring-Damper System','FontWeight','Normal','
 
 %% 3.3: Physical parameter estimation
 
-w = 0:0.1:pi/Delta_T;
-[mag,phase] = bode(G,w);
+% Obtain DC gain
+gain_dc = evalfr(G,1);
 
-gain_DC = mag(1);
+% Obtain approximate damped resonant frequency and peak gain
+[gain_max,w_d] = getPeakGain(G);
 
-w_res = w( mag == max(mag) );
+% Estimate damping ratio based on normalized resonant peak gain
+syms zeta; zeta = min( double( solve( (2*zeta*sqrt(1-zeta^2))^-1 == gain_max/gain_dc, zeta ) ) );
 
-k_hat = 1/(0.01*gain_DC)
+% Estimate natural frequency
+w_n = w_d/sqrt(1-zeta^2);
 
-m_hat = k_hat/w_res^2
+% Estimate spring constant (N/m) (made sure to convert cm to m)
+k_hat = 1/(0.01*gain_dc)
 
-d2c(G,'zoh')
+% Estimate mass (kg)
+m_hat = k_hat/w_n^2
+
+% Estimate damping coefficient (Ns/m)
+b_hat = zeta*2*m_hat*w_n
+
+% I would have preferred using this:
+% Gc = d2c(G,'zoh')
+
+% Compare frequency responses of each model
+Gc = tf(1,[m_hat b_hat k_hat]);
+bode(0.01*G)
+hold on
+bode(Gc)
+hold off
+shg
+legend({'discrete model','continuous model'})

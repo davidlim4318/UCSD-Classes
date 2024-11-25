@@ -1,4 +1,6 @@
-%% MAE 283A: Homework 2, Question 3 by David Lim
+%% MAE 283A: Homework 2, Question 3
+
+% By David Lim
 
 %% 3.1: Parameter estimation
 
@@ -74,3 +76,12 @@ bode(Gc)
 hold off
 shg
 legend({'discrete model','continuous model'})
+
+%%
+
+figure(2)
+plot(t,y-y_sim,'LineWidth',2);
+xlabel('time (s)')
+ylabel('simulation error (cm)')
+set(gca,'FontSize',14)
+title('Position vs. Time of a Mass-Spring-Damper System','FontWeight','Normal','FontSize',18)

@@ -6,7 +6,7 @@ int textSize = 20;  // pixels
 
 float scaleFactor = 5;  // pixels per mm
 
-float blockStiffness = 0.5;  // strain ratio
+float blockSoftness = 0.5;  // strain ratio
 float blockPoisson = 1;  // Poisson's ratio
 
 float fingerWidth = 10;  // mm
@@ -38,8 +38,8 @@ void draw() {
   float finger1Position = x1;
   float finger2Position = x2;
   if (x2 - x1 <= w) {
-    blockWidth = max(w - blockStiffness*(w - (x2 - x1)),0);
-    blockHeight = max(h + blockPoisson*blockStiffness*(w - (x2 - x1)),0);
+    blockWidth = max(w - blockSoftness*(w - (x2 - x1)),0);
+    blockHeight = max(h + blockPoisson*blockSoftness*(w - (x2 - x1)),0);
     finger1Position = xb - blockWidth/2;
     finger2Position = xb + blockWidth/2;
   } 
@@ -52,7 +52,7 @@ void draw() {
   textAlign(LEFT, TOP);
   text("Frame Rate: " + int(frameRate) + " fps", 10, 10);
   text("Penetration: " + min(0,int((x2 - x1)-w)) + " mm", 10, 10+textSize);
-  text("Pressure: " + p + " mV", 10, 10+2*textSize);
+  text("Pressure: " + int(0.1*p-90) + " kPa", 10, 10+2*textSize);
   text("isSqueeze: " + isSqueeze, 10, 10+3*textSize);
   textAlign(CENTER, BOTTOM);
   text(message, width/2, height);
@@ -81,7 +81,9 @@ void serialEvent (Serial myPort) {
       x2 = float(inputArray[3]);
       xb = float(inputArray[4]);
       p = float(inputArray[5]);
-      isSqueeze = int(inputArray[6]);
+      blockSoftness = float(inputArray[6]);
+      blockPoisson = float(inputArray[7]);
+      isSqueeze = int(inputArray[8]);
     } catch (Exception e) {
       message = input;
     }

@@ -2,9 +2,9 @@ import processing.serial.*;
 
 Serial myPort;        // The serial port
 
-int textSize = 20;  // pixels
+int textSize = 40;  // pixels
 
-float scaleFactor = 5;  // pixels per mm
+float scaleFactor = 10;//5;  // pixels per mm
 
 float blockSoftness = 0.5;  // strain ratio
 float blockPoisson = 1;  // Poisson's ratio
@@ -18,10 +18,16 @@ float x1;
 float x2;
 float xb;
 float p;
+float pot;
 
 int isSqueeze;
 
 String message = "Waiting for data...";
+
+PImage image1;
+PImage image5;
+PImage imageAlex;
+PImage imageDavid;
 
 void setup() {
   println(Serial.list());
@@ -29,7 +35,12 @@ void setup() {
   myPort.bufferUntil('\n');
   
   frameRate(30);
-  size(720, 480);
+  fullScreen();
+  //size(720, 480);
+  image1 = loadImage("playdoh.png");
+  image5 = loadImage("balloon.png");
+  imageAlex = loadImage("alex.png");
+  imageDavid = loadImage("david.png");
 }
 
 void draw() {
@@ -52,21 +63,32 @@ void draw() {
   textAlign(LEFT, TOP);
   text("Frame Rate: " + int(frameRate) + " fps", 10, 10);
   text("Penetration: " + min(0,int((x2 - x1)-w)) + " mm", 10, 10+textSize);
-  text("Pressure: " + int(0.1*p-90) + " kPa", 10, 10+2*textSize);
-  text("isSqueeze: " + isSqueeze, 10, 10+3*textSize);
+  text("Pressure Command: " + int(0.1*p-90) + " kPa", 10, 10+2*textSize);
+  text("Mode: " + isSqueeze, 10, 10+3*textSize);
+  text("Max Pressure: " + pot, 10, 10+4*textSize);
   textAlign(CENTER, BOTTOM);
   text(message, width/2, height);
   
-  translate(width/2, height/2);
+  translate(width/2-20, height/2);
   scale(scaleFactor, -scaleFactor);
   
   fill(173, 216, 230);
   ellipse(finger1Position-fingerWidth/2, 0, fingerWidth, fingerHeight);
   ellipse(finger2Position+fingerWidth/2, 0, fingerWidth, fingerHeight);
   
-  fill(255, 182, 193);
-  rectMode(CENTER);
-  ellipse(xb, 0, blockWidth, blockHeight);
+  imageMode(CENTER);
+  scale(1,-1);
+  if (isSqueeze == 1) {
+    image(image1, xb, 0, blockWidth, blockHeight);  // Map the image to the block
+  } else if (isSqueeze == 5) {
+    image(image5, xb, 0, blockWidth, blockHeight);  // Map the image to the block
+  } else if (isSqueeze == 3) {
+    image(imageAlex, xb, 0, blockWidth, blockHeight);  // Map the image to the block
+  } else {
+    fill(255, 182, 193);
+    rectMode(CENTER);
+    ellipse(xb, 0, blockWidth, blockHeight);
+  }
 }
 
 void serialEvent (Serial myPort) {
@@ -84,6 +106,7 @@ void serialEvent (Serial myPort) {
       blockSoftness = float(inputArray[6]);
       blockPoisson = float(inputArray[7]);
       isSqueeze = int(inputArray[8]);
+      pot = float(inputArray[9]);
     } catch (Exception e) {
       message = input;
     }

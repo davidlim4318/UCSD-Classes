@@ -7,11 +7,8 @@ Adafruit_MCP4725 dac;
 int pina = A0;
 int pinb = A1;
 int pinpot = A5;
-int pin1 = 45;
-int pin2 = 47;
-int pin3 = 49;
-int pin4 = 51;
-int pin5 = 53;
+int pin1 = 2;
+int pin2 = 3;
 
 // Mode
 int val1Ref = 424;
@@ -45,17 +42,19 @@ bool isSqueeze;
 
 unsigned long startTime;
 
+unsigned long buttonTime;
+int i;
+int myArray[180]={450,360,450,240,450,360,450,360,450,270,450,240,450,270,450,330,450,390,450,390,450,240,450,240,450,330,450,240,450,240,450,330,450,420,450,330,450,300,450,420,450,390,450,240,450,300,450,240,450,240,450,240,450,420,450,240,450,240,450,390,450,240,450,270,450,240,450,330,450,240,450,270,450,240,450,390,450,360,450,270,450,240,450,330,450,240,450,270,450,360,450,300,450,420,450,240,450,330,450,360,450,270,450,390,450,240,450,330,450,270,450,300,450,360,450,300,450,420,450,420,450,390,450,420,450,270,450,300,450,420,450,240,450,270,450,330,450,300,450,420,450,390,450,240,450,300,450,330,450,390,450,240,450,240,450,390,450,240,450,240,450,240,450,300,450,240,450,360,450,420,450,240,450,360,450,240,450,300,450,360};
+
+
 void setup() {
   // Setup
-  Serial.begin(19200);
+  Serial.begin(9600);
   pinMode(pina,INPUT_PULLUP);
   pinMode(pinb,INPUT_PULLUP);
   pinMode(pinpot,INPUT);
   pinMode(pin1, INPUT_PULLUP);
   pinMode(pin2, INPUT_PULLUP);
-  pinMode(pin3, INPUT_PULLUP);
-  pinMode(pin4, INPUT_PULLUP);
-  pinMode(pin5, INPUT_PULLUP);
   dac.begin(0x61);
   jam(pressureATM);
   
@@ -66,77 +65,24 @@ void setup() {
 }
 
 void loop() {
-
-  changeState();
   // Read-in currennt positions
   readIn();
   // Check for collisions
-  if (mode > 0) {
-    checkCollision();
+  checkCollision();
+
+  if (millis() > buttonTime + 500) {
+    if (digitalRead(pin1) == LOW) {
+      i = i + 1;
+      buttonTime = millis();
+      printData();
+    } else if (digitalRead(pin2) == LOW) {
+      i = i - 1;
+      buttonTime = millis();
+      printData();
+    }
   }
 
-  switch (mode) {
-    case 1:
-      blockSoftness = 0.5;
-      blockPoisson = 1;
-      if (isSqueeze) {
-        if (w > x2 - x1 + threshold) {
-          h = h + w - (x2 - x1 + threshold);
-          w = x2 - x1 + threshold;
-        }
-      }
-      if (x2 - x1 > 75) {
-        h = 60;
-        w = 60;
-      }
-      p = map(pot,0,1023,0,900);
-      break;
-    case 2:
-      blockSoftness = 1; // map(pot,0,1023,0,0.5);
-      blockPoisson = 1;
-      w = 40;
-      h = 40;
-      p = round(map(pot,0,1023,0,900)/30.)*30;
-      pressureMax = p*0.1-90;
-      break;
-    case 3:
-      blockSoftness = 1;
-      blockPoisson = 1;
-      w = map(pot,0,1023,0,200);
-      h = w;
-      p = 0;
-      break;
-    case 4:
-      blockSoftness = 1;
-      blockPoisson = 1;
-      w = 40;
-      h = 40;
-      p = 700 - map(pot,0,1023,0,50)*(w-(x2-x1));
-      break;
-    case 5:
-      blockSoftness = 0.5;
-      blockPoisson = 1;
-      if (isSqueeze) {
-        if (x2 - x1 < 20) {
-          h = 0;
-          w = 0;
-          p = pressureATM;
-        }
-        else {
-          h = 50;
-          w = 50;
-          p = map(pot,0,1023,0,900);
-        }
-      }
-      if (x2 - x1 > 75) {
-        h = 50;
-        w = 50;
-      }
-      break;
-    default:
-      Serial.println("Pick a mode!");
-      break;
-  }
+  p = myArray[i];
 
   if (isSqueeze) {
     pressure = constrain(p,0,1000);
@@ -150,36 +96,8 @@ void loop() {
     }
   }
 
-  if (mode > 0) {
-    // Jam user
-    jam(pressure);
-
-    // Print data to Processing
-    printData();
-  }
-}
-
-void changeState() {
-  if (digitalRead(pin1) == LOW) {
-    mode = 1;
-    Serial.println("Playdoh");
-  }
-  else if (digitalRead(pin2) == LOW) {
-    mode = 2;
-    Serial.println("Adjustable Fslip Ball");
-  }
-  else if (digitalRead(pin3) == LOW) {
-    mode = 3;
-    Serial.println("Adjustable Size Ball");
-  }
-  else if (digitalRead(pin4) == LOW) {
-    mode = 4;
-    Serial.println("Variable Fslip Ball");
-  }
-  else if (digitalRead(pin5) == LOW) {
-    mode = 5;
-    Serial.println("Popping Balloon");
-  }
+  // Jam user
+  jam(pressure);
 }
 
 void readIn() {
@@ -229,25 +147,9 @@ void jam(float p) {
 }
 
 void printData () {
-  Serial.print(w);
-  Serial.print(",");
-  Serial.print(h);
-  Serial.print(",");
-  Serial.print(x1);
-  Serial.print(",");
-  Serial.print(x2);
-  Serial.print(",");
-  Serial.print(xb);
-  Serial.print(",");
-  Serial.print(pressure);
-  Serial.print(",");
-  Serial.print(blockSoftness);
-  Serial.print(",");
-  Serial.print(blockPoisson);
-  Serial.print(",");
-  Serial.print(mode);
-  Serial.print(",");
-  Serial.print(pressureMax);
+  Serial.print(i);
+  Serial.print(" ");
+  Serial.print(myArray[i]);
   Serial.println(" ");
 }
 

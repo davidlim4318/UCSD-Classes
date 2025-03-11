@@ -16,12 +16,28 @@
 %   See also TRAJECTORYGENERATOR, NEXTSTATE, FEEDBACKCONTROL.
 
 %   Written by David Lim for the MAE 204 Final Project in WI25.
-%   Last modififed on 03/08/25.
+%   Last modififed on 03/09/25.
 
 clear
 addpath /Users/davidlim/Documents/ModernRobotics/packages/MATLAB/mr;
 
 %% Generate desired end-effector trajectory
+
+% SE(3) configurations of block
+ang_c_init = 0;  % initial angle of block (given)
+x_c_init = 1;  % initial position of block (given)
+y_c_init = 0;
+ang_c_fin = -pi/2;  % final angle of block (given)
+x_c_fin = 0;  % final position of block (given)
+y_c_fin = -1;
+Tsc_initial = [cos(ang_c_init) -sin(ang_c_init) 0 x_c_init;
+               sin(ang_c_init) cos(ang_c_init) 0 y_c_init;
+               0 0 1 0;
+               0 0 0 1];
+Tsc_final = [cos(ang_c_fin) -sin(ang_c_fin) 0 x_c_fin;
+             sin(ang_c_fin) cos(ang_c_fin) 0 y_c_fin;
+             0 0 1 0;
+             0 0 0 1];
 
 % SE(3) configurations of end-effector
 ang_e_stan = pi/2+pi/6;  % angle of end-effector at standoff
@@ -39,22 +55,6 @@ Tce_standoff = [cos(ang_e_stan) 0 sin(ang_e_stan) 0;
 Tce_grasp = [cos(ang_e_grab) 0 sin(ang_e_grab) 0;
              0 1 0 0;
              -sin(ang_e_grab) 0 cos(ang_e_grab) z_e_grab;
-             0 0 0 1];
-
-% SE(3) configurations of block
-ang_c_init = pi/4;  % initial angle of block (given)
-x_c_init = 0.5;  % initial position of block (given)
-y_c_init = 0.5;
-ang_c_fin = -3*pi/4;  % final angle of block (given)
-x_c_fin = -0.5;  % final position of block (given)
-y_c_fin = -0.5;
-Tsc_initial = [cos(ang_c_init) -sin(ang_c_init) 0 x_c_init;
-               sin(ang_c_init) cos(ang_c_init) 0 y_c_init;
-               0 0 1 0;
-               0 0 0 1];
-Tsc_final = [cos(ang_c_fin) -sin(ang_c_fin) 0 x_c_fin;
-             sin(ang_c_fin) cos(ang_c_fin) 0 y_c_fin;
-             0 0 1 0;
              0 0 0 1];
 
 % generate trajectory of SE(3) configurations at each time step

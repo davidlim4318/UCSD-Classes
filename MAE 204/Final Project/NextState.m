@@ -30,7 +30,7 @@ function theta_list_new = NextState(theta_list_old,theta_dot_list,dt,theta_dot_m
 %   See also NEXTSTATETEST, WRAPPER.
 
 %   Written by David Lim for the MAE 204 Final Project in WI25.
-%   Last modififed on 03/08/25.
+%   Last modififed on 03/11/25.
 
 % parameters of the mecanum wheel base
 l = 0.47/2;
@@ -49,25 +49,25 @@ theta_list_new(4:end) = theta_list_old(4:end) + theta_dot_list*dt;
 % compute body twist of chassis
 Vb = r/4*[-1/(l+w) 1/(l+w) 1/(l+w) -1/(l+w);
           1 1 1 1;
-          -1 1 -1 1]*theta_dot_list(6:end);
+          -1 1 -1 1]*(theta_list_new(9:end)-theta_list_old(9:end));
 w_bz = Vb(1);
 v_bx = Vb(2);
 v_by = Vb(3);
 
 % compute chassis velocities in body frame
 if w_bz == 0
-    qb_dot = Vb;
+    delta_qb = Vb;
 else
-    qb_dot = [w_bz;
+    delta_qb = [w_bz;
               (v_bx*sin(w_bz)+v_by*(cos(w_bz)-1))/w_bz;
               (v_by*sin(w_bz)+v_bx*(1-cos(w_bz)))/w_bz];
 end
 phi = theta_list_old(1);
 
 % compute chassis velocities in space frame
-q_dot = [1 0 0;
+delta_q = [1 0 0;
          0 cos(phi) -sin(phi);
-         0 sin(phi) cos(phi)]*qb_dot;
+         0 sin(phi) cos(phi)]*delta_qb;
 
 % increment chassis configuration
-theta_list_new(1:3) = theta_list_old(1:3)+q_dot*dt;
+theta_list_new(1:3) = theta_list_old(1:3)+delta_q;
